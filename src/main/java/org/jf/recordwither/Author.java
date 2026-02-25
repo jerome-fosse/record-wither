@@ -3,7 +3,7 @@ package org.jf.recordwither;
 import java.time.LocalDate;
 import java.util.function.Consumer;
 
-@Wither
+//@WitherIgnore
 public record Author(String name, String nationality, LocalDate dateOfBirth) {
 
     // region @Wither — generated, do not edit manually

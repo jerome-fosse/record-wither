@@ -21,14 +21,19 @@ The skill accepts an optional argument `$ARGUMENTS`.
 
 ## Steps
 
-1. Determine the list of candidate files according to the scope above.
+1. Determine the list of candidate files according to the scope above. A candidate file is any `.java` file that contains `\brecord\s+\w+\s*\(` (any record declaration) or `@Wither\b` (word boundary — excludes `@WitherIgnore`).
 
 2. For each file found:
-   a. Read the file.
-   b. Find every occurrence of `@Wither` in the file. For each one, look at the next type declaration that follows it (skipping blank lines and other annotations). If that declaration is a `class` or `interface`, skip it. If it is a `record`, process it — this includes top-level records, nested records, and local records declared inside methods.
+   a. Read the file. Always read the current content — never rely on a previously seen state.
+   b. Find every `record` declaration in the file (top-level, nested, or local). For each one, apply the following rules to decide whether to generate a wither:
+      - `public record` **without** `@WitherIgnore` → **generate** (regardless of whether `@Wither` is present)
+      - `public record` **with** `@WitherIgnore` → **skip**
+      - non-public record (protected, package-private, local) **with** `@Wither` → **generate**
+      - non-public record **without** `@Wither` → **skip**
+      - `class` or `interface` annotated with `@Wither` → **skip**
    c. Extract the record name and its component list from the record declaration line, e.g.:
       `record Foo(TypeA fieldA, TypeB fieldB)` → components: `[(TypeA, fieldA), (TypeB, fieldB)]`
-   c. Check whether `java.util.function.Consumer` is already imported; if not, add the import.
+   d. Check whether `java.util.function.Consumer` is already imported; if not, add the import.
    d. Build the generated block using the following template (replace `<Record>`, `<fields>`, `<setters>`, `<constructor-args>` with the actual values):
 
 ```java
@@ -61,9 +66,13 @@ The skill accepts an optional argument `$ARGUMENTS`.
     // endregion @Wither
 ```
 
-   e. If the file already contains a `// region @Wither` … `// endregion @Wither` block, **replace** it entirely with the freshly generated one. Otherwise **insert** the generated block just before the closing `}` of the record body.
+   f. If the file already contains a `// region @Wither` … `// endregion @Wither` block, **replace** it entirely with the freshly generated one. Otherwise **insert** the generated block just before the closing `}` of the record body.
 
-3. After editing all files, report which files were updated and what changed (added/removed/updated components).
+3. After editing all files, report:
+   - records where a wither was generated or is already up to date
+   - records annotated with `@WitherIgnore` (opted out explicitly)
+   - non-public records without `@Wither` (not eligible)
+   Do not mention files that were excluded from the scan entirely (e.g. not a record).
 
 ## Rules
 - The `Wither` inner class must be `public static`.

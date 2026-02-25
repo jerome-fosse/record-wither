@@ -2,7 +2,6 @@ package org.jf.recordwither;
 
 import java.util.function.Consumer;
 
-@Wither
 public record Book(String title, Author author, Integer year) {
 
     // region @Wither — generated, do not edit manually

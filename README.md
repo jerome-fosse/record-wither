@@ -18,17 +18,9 @@ var updated = author.with(w -> w.nationality("French"));
 
 ## Usage
 
-Annotate the record with `@Wither`:
+All `public` records get a wither automatically — no annotation required. Run the `/wither` skill in Claude Code and the boilerplate is generated directly in the source file:
 
 ```java
-@Wither
-public record Author(String name, String nationality, LocalDate dateOfBirth) {}
-```
-
-Then run the `/wither` skill in Claude Code (see below). The boilerplate is generated directly in the source file:
-
-```java
-@Wither
 public record Author(String name, String nationality, LocalDate dateOfBirth) {
 
     // region @Wither — generated, do not edit manually
@@ -57,15 +49,18 @@ public record Author(String name, String nationality, LocalDate dateOfBirth) {
 
 The generated code is plain Java — the IDE sees it, understands it, and can navigate it.
 
-### Chained calls
+### Opting out — `@WitherIgnore`
+
+Annotate a `public` record with `@WitherIgnore` to exclude it from generation:
 
 ```java
-var updated = author.with(w -> w.name("Jane Doe").nationality("French"));
+@WitherIgnore
+public record Internal(String data) {}
 ```
 
-### Local records
+### Opting in — `@Wither`
 
-`@Wither` also works on records declared inside a method:
+Use `@Wither` to explicitly request generation on non-public records (protected, package-private, or local):
 
 ```java
 public void doSomething() {
@@ -77,6 +72,12 @@ public void doSomething() {
 }
 ```
 
+### Chained calls
+
+```java
+var updated = author.with(w -> w.name("Jane Doe").nationality("French"));
+```
+
 ## The `/wither` skill
 
 The Claude Code skill generates and regenerates the boilerplate automatically. Just update the record signature and re-run `/wither`.
@@ -84,29 +85,31 @@ The Claude Code skill generates and regenerates the boilerplate automatically. J
 | Command | Behaviour |
 |---|---|
 | `/wither` | Processes only modified files (uncommitted, via `git diff`) |
-| `/wither --all` | Processes all `@Wither` files in the project |
+| `/wither --all` | Processes all records in the project |
 | `/wither Publisher.java` | Processes the specified file only |
 
 > If the project is not a git repository, `/wither` behaves like `/wither --all`.
 
 ### Generation rules
 
+| Record type | Annotation | Result |
+|---|---|---|
+| `public record` | none | ✅ generated |
+| `public record` | `@Wither` | ✅ generated |
+| `public record` | `@WitherIgnore` | ⏭ skipped |
+| non-public record | `@Wither` | ✅ generated |
+| non-public record | none | ⏭ skipped |
+| `class` or `interface` | `@Wither` | ⏭ skipped |
+
 - The generated block is delimited by `// region @Wither` and `// endregion @Wither` — do not edit its contents manually.
-- Only `record` types are processed; `class` and `interface` types annotated with `@Wither` are ignored.
 - If `java.util.function.Consumer` is not yet imported, it is added automatically.
 - Re-running `/wither` after adding, removing, or renaming a component is enough to resync the block.
 
 ## Ideas for improvement
 
-- **`@Wither` optional for public records** — wither boilerplate is generated automatically for all `public` records; use `@WitherIgnore` to opt out. `@Wither` remains useful to explicitly request generation on `protected` or package-private records.
-- **`@WitherIgnore`** — a companion annotation to exclude specific components from the generated `Wither` class (useful for computed or derived fields).
-- **IntelliJ file watcher** — use IntelliJ's built-in File Watchers plugin to run `claude --print "/wither $FileName$"` on save, keeping the boilerplate in sync without any manual step.
-- **Git pre-commit hook** — run `/wither` automatically before each commit to ensure the generated blocks are always up to date in the committed code.
-- **Validation** — detect drift between the record signature and the existing generated block at `/wither` run time and warn explicitly rather than silently regenerating.
+✅ **`@Wither` optional for public records** — wither boilerplate is generated automatically for all `public` records; use `@WitherIgnore` to opt out. `@Wither` remains useful to explicitly request generation on `protected` or package-private records.<br>
+✅ **`@WitherIgnore`** — annotation to exclude a public record from wither generation.<br>
+🔳 **IntelliJ file watcher** — use IntelliJ's built-in File Watchers plugin to run `claude --print "/wither $FileName$"` on save, keeping the boilerplate in sync without any manual step.<br>
+🔳 **Git pre-commit hook** — run `/wither` automatically before each commit to ensure the generated blocks are always up to date in the committed code.<br>
+🔳 **Validation** — detect drift between the record signature and the existing generated block at `/wither` run time and warn explicitly rather than silently regenerating.
 
-## Build
-
-```bash
-mvn clean compile
-mvn exec:java -Dexec.mainClass="org.jf.recordwither.Test"
-```
