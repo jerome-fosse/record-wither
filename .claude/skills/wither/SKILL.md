@@ -31,30 +31,32 @@ The skill accepts an optional argument `$ARGUMENTS`.
       - non-public record (protected, package-private, local) **with** `@Wither` → **generate**
       - non-public record **without** `@Wither` → **skip**
       - `class` or `interface` annotated with `@Wither` → **skip**
-   c. Extract the record name and its component list from the record declaration line, e.g.:
-      `record Foo(TypeA fieldA, TypeB fieldB)` → components: `[(TypeA, fieldA), (TypeB, fieldB)]`
+   c. Extract the record name and its component list from the record declaration line. For each component, note whether it is annotated with `@WitherIgnore`, e.g.:
+      `record Foo(TypeA fieldA, @WitherIgnore TypeB fieldB)` → components: `[(TypeA, fieldA, ignored=false), (TypeB, fieldB, ignored=true)]`
    d. Check whether `java.util.function.Consumer` is already imported; if not, add the import.
-   d. Build the generated block using the following template (replace `<Record>`, `<fields>`, `<setters>`, `<constructor-args>` with the actual values):
+   d. Build the generated block using the following template. For each component:
+      - Always generate a private field and a constructor initialisation line.
+      - Generate a fluent setter **only if the component is NOT annotated `@WitherIgnore`**.
 
 ```java
     // region @Wither — generated, do not edit manually
     public static class Wither {
-        private <Type1> <field1>;
-        // one field per component
+        private <Type1> <field1>;      // all components, including @WitherIgnore ones
+        // ...
 
         private Wither(<Record> record) {
-            <field1> = record.<field1>;
-            // one line per component
+            <field1> = record.<field1>;  // all components
+            // ...
         }
 
+        // fluent setter — only for components WITHOUT @WitherIgnore
         public <Record>.Wither <field1>(<Type1> <field1>) {
             this.<field1> = <field1>;
             return this;
         }
-        // one fluent setter per component
 
         private <Record> apply() {
-            return new <Record>(<field1>, <field2>, ...);
+            return new <Record>(<field1>, <field2>, ...);  // all components
         }
     }
 

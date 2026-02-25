@@ -3,8 +3,7 @@ package org.jf.recordwither;
 import java.time.LocalDate;
 import java.util.function.Consumer;
 
-//@WitherIgnore
-public record Author(String name, String nationality, LocalDate dateOfBirth) {
+public record Author(String name, String nationality, @WitherIgnore LocalDate dateOfBirth) {
 
     // region @Wither — generated, do not edit manually
     public static class Wither {
@@ -28,10 +27,7 @@ public record Author(String name, String nationality, LocalDate dateOfBirth) {
             return this;
         }
 
-        public Author.Wither dateOfBirth(LocalDate dateOfBirth) {
-            this.dateOfBirth = dateOfBirth;
-            return this;
-        }
+        // dateOfBirth is @WitherIgnore — no setter
 
         private Author apply() {
             return new Author(name, nationality, dateOfBirth);
