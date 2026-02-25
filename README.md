@@ -96,10 +96,17 @@ The Claude Code skill generates and regenerates the boilerplate automatically. J
 - If `java.util.function.Consumer` is not yet imported, it is added automatically.
 - Re-running `/wither` after adding, removing, or renaming a component is enough to resync the block.
 
+## Ideas for improvement
+
+- **`@Wither` optional for public records** — wither boilerplate is generated automatically for all `public` records; use `@WitherIgnore` to opt out. `@Wither` remains useful to explicitly request generation on `protected` or package-private records.
+- **`@WitherIgnore`** — a companion annotation to exclude specific components from the generated `Wither` class (useful for computed or derived fields).
+- **IntelliJ file watcher** — use IntelliJ's built-in File Watchers plugin to run `claude --print "/wither $FileName$"` on save, keeping the boilerplate in sync without any manual step.
+- **Git pre-commit hook** — run `/wither` automatically before each commit to ensure the generated blocks are always up to date in the committed code.
+- **Validation** — detect drift between the record signature and the existing generated block at `/wither` run time and warn explicitly rather than silently regenerating.
+
 ## Build
 
 ```bash
 mvn clean compile
-mvn test
 mvn exec:java -Dexec.mainClass="org.jf.recordwither.Test"
 ```
